@@ -2,6 +2,11 @@
 # OUTPUT CALCULATED VARIABLES (prefer full objects)
 # ----------------------------------------------------------------------------------------------------------------------
 
+output "iam" {
+  description = "The iam resource objects that define access to the GCS bucket."
+  value       = { for key, iam in module.subscription-iam : key => iam.iam }
+}
+
 # ----------------------------------------------------------------------------------------------------------------------
 # OUTPUT ALL RESOURCES AS FULL OBJECTS
 # ----------------------------------------------------------------------------------------------------------------------

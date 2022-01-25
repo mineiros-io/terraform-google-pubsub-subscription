@@ -1,30 +1,33 @@
+locals {
+  iam_map = { for iam in var.iam : iam.role => iam }
+}
+
 module "subscription-iam" {
   source = "github.com/mineiros-io/terraform-google-pubsub-subscription-iam?ref=v0.0.3"
 
-  count = var.module_enabled ? 1 : 0
-
-  project = var.project
-
-  subscription = google_pubsub_subscription.subscription
-
-  role          = google_pubsub_subscription_iam_member.pull_subscription_iam_member.role
-  members       = try(google_pubsub_subscription_iam_member.pull_subscription_iam_member.members, [])
-  authoritative = try(google_pubsub_subscription_iam_member.pull_subscription_iam_member.authoritative, true)
+  for_each = var.policy_bindings == null ? local.iam_map : {}
 
   module_enabled    = var.module_enabled
   module_depends_on = var.module_depends_on
-}
 
-# enable each pull subscriptions to be subscribed to by a iam member.
-resource "google_pubsub_subscription_iam_member" "pull_subscription_iam_member" {
-  count = var.module_enabled ? 1 : 0
+  subscription  = try(google_pubsub_subscription.subscription[0].name, null)
+  role          = each.value.role
+  members       = each.value.members
+  authoritative = try(each.value.authoritative, true)
 
   project = var.project
+}
 
-  subscription = google_pubsub_subscription.subscription
+module "policy_bindings" {
+  source = "github.com/mineiros-io/terraform-google-pubsub-subscription-iam?ref=v0.0.3"
 
-  role   = "roles/pubsub.subscriber"
-  member = google_pubsub_subscription.subscription.iam_member
+  count = var.policy_bindings != null ? 1 : 0
 
-  depends_on = [var.module_depends_on, google_pubsub_subscription.subscription]
+  module_enabled    = var.module_enabled
+  module_depends_on = var.module_depends_on
+
+  subscription    = try(google_pubsub_subscription.subscription[0].name, null)
+  policy_bindings = var.policy_bindings
+
+  project = var.project
 }

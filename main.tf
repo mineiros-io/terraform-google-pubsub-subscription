@@ -3,7 +3,8 @@ resource "google_pubsub_subscription" "subscription" {
 
   project = var.project
 
-  topic = var.name
+  name  = var.name
+  topic = var.topic
 
   labels                     = try(var.labels, {})
   ack_deadline_seconds       = try(var.ack_deadline_seconds, null)
@@ -16,7 +17,7 @@ resource "google_pubsub_subscription" "subscription" {
   # if ttl = `null` do not add the block (force default of 31d)
   # if set, use what ever has been set. (users whish is our command ;))
   dynamic "expiration_policy" {
-    for_each = try(var.expiration_policy_ttl, "") != null ? [1] : []
+    for_each = var.expiration_policy_ttl != null ? [1] : []
 
     content {
       ttl = try(var.expiration_policy_ttl, "")
@@ -42,18 +43,18 @@ resource "google_pubsub_subscription" "subscription" {
   }
 
   dynamic "push_config" {
-    for_each = can(var.push_config) ? [1] : []
+    for_each = var.push_config != null ? [var.push_config] : []
 
     content {
-      push_endpoint = var.push_config.push_endpoint
-      attributes    = try(var.push_config.attributes, {})
+      push_endpoint = push_config.value.push_endpoint
+      attributes    = try(push_config.value.attributes, {})
 
       dynamic "oidc_token" {
-        for_each = can(var.push_config.oidc_token) ? [1] : []
+        for_each = try([push_config.value.oidc_token], [])
 
         content {
-          service_account_email = var.push_config.oidc_token.service_account_email
-          audience              = try(var.push_config.oidc_token.audience, null)
+          service_account_email = oidc_token.value.service_account_email
+          audience              = try(push_config.value.oidc_token.audience, null)
         }
       }
     }

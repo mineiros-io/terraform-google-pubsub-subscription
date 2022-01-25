@@ -10,7 +10,12 @@ variable "name" {
 
 variable "topic" {
   type        = string
-  description = "(Required) Name of the subscription."
+  description = "(Required) A reference to a Topic resource."
+}
+
+variable "project" {
+  type        = string
+  description = "(Required) The project in which the resource belongs. If it is not provided, the provider project is used."
 }
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -54,10 +59,10 @@ variable "enable_message_ordering" {
   description = "(Optional) Whether to order message by when it was received."
 }
 
-variable "expiration_policy" {
-  type        = any
+variable "expiration_policy_ttl" {
+  type        = string
   default     = null
-  description = "(Optional) A policy that specifies the conditions for this subscription's expiration."
+  description = "(Optional) Specifies the 'time-to-live' duration for an associated resource."
 }
 
 variable "dead_letter_policy" {
@@ -76,6 +81,44 @@ variable "push_config" {
   type        = any
   default     = null
   description = "(Optional) If push delivery is used with this subscription, this field is used to configure it."
+}
+
+## IAM
+
+variable "iam" {
+  description = "(Optional) A list of IAM access."
+  type        = any
+  default     = []
+
+  # validate required keys in each object
+  validation {
+    condition     = alltrue([for x in var.iam : length(setintersection(keys(x), ["role", "members"])) == 2])
+    error_message = "Each object in var.iam must specify a role and a set of members."
+  }
+
+  # validate no invalid keys are in each object
+  validation {
+    condition     = alltrue([for x in var.iam : length(setsubtract(keys(x), ["role", "members", "authoritative"])) == 0])
+    error_message = "Each object in var.iam does only support role, members and authoritative attributes."
+  }
+}
+
+variable "policy_bindings" {
+  description = "(Optional) A list of IAM policy bindings."
+  type        = any
+  default     = null
+
+  # validate required keys in each object
+  validation {
+    condition     = var.policy_bindings == null ? true : alltrue([for x in var.policy_bindings : length(setintersection(keys(x), ["role", "members"])) == 2])
+    error_message = "Each object in var.policy_bindings must specify a role and a set of members."
+  }
+
+  # validate no invalid keys are in each object
+  validation {
+    condition     = var.policy_bindings == null ? true : alltrue([for x in var.policy_bindings : length(setsubtract(keys(x), ["role", "members", "condition"])) == 0])
+    error_message = "Each object in var.policy_bindings does only support role, members and condition attributes."
+  }
 }
 
 # ----------------------------------------------------------------------------------------------------------------------

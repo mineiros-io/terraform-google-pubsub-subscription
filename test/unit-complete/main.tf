@@ -4,23 +4,28 @@
 # The purpose is to activate everything the module offers, but trying to keep execution time and costs minimal.
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-variable "aws_region" {
-  description = "(Optional) The AWS region in which all resources will be created."
+variable "gcp_region" {
   type        = string
-  default     = "us-east-1"
+  description = "(Required) The gcp region in which all resources will be created."
+}
+
+variable "gcp_project" {
+  type        = string
+  description = "(Required) The ID of the project in which the resource belongs."
 }
 
 terraform {
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 3.0"
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 4.0"
     }
   }
 }
 
-provider "aws" {
-  region = var.aws_region
+provider "google" {
+  region  = var.gcp_region
+  project = var.gcp_project
 }
 
 # DO NOT RENAME MODULE NAME
@@ -30,10 +35,33 @@ module "test" {
   module_enabled = true
 
   # add all required arguments
+  name  = "test-name"
+  topic = "test-topic"
 
   # add all optional arguments that create additional resources
+  iam = [
+    {
+      role    = "roles/viewer"
+      members = ["domain:mineiros.io"]
+    }
+  ]
 
   # add most/all other optional arguments
+  project = "terraform-service-catalog"
+  labels = {
+    "test" = "test"
+  }
+  ack_deadline_seconds       = 10
+  message_retention_duration = "60s"
+  retain_acked_messages      = false
+  filter                     = "*"
+  enable_message_ordering    = true
+  expiration_policy_ttl      = "10s"
+
+  retry_policy = {
+    minimum_backoff = "10s"
+    maximum_backoff = "60s"
+  }
 
   # module_tags = {
   #   Environment = "unknown"
