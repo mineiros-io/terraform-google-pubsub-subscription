@@ -70,6 +70,10 @@ section {
       ```hcl
       module "terraform-google-pubsub-subscription" {
         source = "git@github.com:mineiros-io/terraform-google-pubsub-subscription.git?ref=v0.0.1"
+
+        name    = "subscription-name"
+        topic   = "topic-resource"
+        project = "resource-project"
       }
       ```
     END
