@@ -20,24 +20,11 @@ header {
     text  = "Terraform Version"
   }
 
-  # TODO: remove and enable gh or gcp provider badge
-  badge "tf-aws-provider" {
-    image = "https://img.shields.io/badge/AWS-3-F8991D.svg?logo=terraform"
-    url   = "https://github.com/terraform-providers/terraform-provider-aws/releases"
-    text  = "AWS Provider Version"
+  badge "tf-gcp-provider" {
+    image = "https://img.shields.io/badge/google-4-1A73E8.svg?logo=terraform"
+    url   = "https://github.com/terraform-providers/terraform-provider-google/releases"
+    text  = "Google Provider Version"
   }
-
-  # badge "tf-gh" {
-  #   image = "https://img.shields.io/badge/GH-4-F8991D.svg?logo=terraform"
-  #   url = "https://github.com/terraform-providers/terraform-provider-github/releases"
-  #   text = "Github Provider Version"
-  # }
-
-  # badge "tf-gcp-provider" {
-  #   image = "https://img.shields.io/badge/google-4-1A73E8.svg?logo=terraform"
-  #   url   = "https://github.com/terraform-providers/terraform-provider-google/releases"
-  #   text  = "Google Provider Version"
-  # }
 
   badge "slack" {
     image = "https://img.shields.io/badge/slack-@mineiros--community-f32752.svg?logo=slack"
@@ -50,10 +37,12 @@ section {
   title   = "terraform-google-pubsub-subscription"
   toc     = true
   content = <<-END
-    A [Terraform] module for [Amazon Web Services (AWS)][aws].
+    A [Terraform](https://www.terraform.io) module for creating a
+    [PubSub Subscriber](https://cloud.google.com/pubsub/docs/subscriber) for
+    [Google Cloud Pub/Sub](https://cloud.google.com/pubsub).
 
     **_This module supports Terraform version 1
-    and is compatible with the Terraform AWS Provider version 3._**
+    and is compatible with the Terraform Google Provider version 4._**
 
     This module is part of our Infrastructure as Code (IaC) framework
     that enables our users and customers to easily deploy and manage reusable,
@@ -65,11 +54,11 @@ section {
     content = <<-END
       This module implements the following Terraform resources
 
-      - `null_resource`
+      - `google_pubsub_subscription`
 
       and supports additional features of the following modules:
 
-      - [mineiros-io/something/google](https://github.com/mineiros-io/terraform-google-something)
+      - [mineiros-io/subscription-iam](https://github.com/mineiros-io/terraform-google-pubsub-subscription-iam)
     END
   }
 
@@ -81,6 +70,10 @@ section {
       ```hcl
       module "terraform-google-pubsub-subscription" {
         source = "git@github.com:mineiros-io/terraform-google-pubsub-subscription.git?ref=v0.0.1"
+
+        name    = "subscription-name"
+        topic   = "topic-resource"
+        project = "resource-project"
       }
       ```
     END
@@ -90,67 +83,390 @@ section {
     title   = "Module Argument Reference"
     content = <<-END
       See [variables.tf] and [examples/] for details and use-cases.
+
+      name    = "name-of-sub"
+      topic   = "topic-resource"
+      project = "project-a"
     END
 
     section {
       title = "Main Resource Configuration"
 
-      # please add main resource variables here
-
-      # TODO: remove examples
-
-      ### Example of a required variable
-      variable "example_required" {
+      variable "name" {
         required    = true
         type        = string
         description = <<-END
-          The name of the resource
+          Name of the subscription.
         END
       }
 
-      ### Example of an optional variable
-      variable "example_name" {
+      variable "topic" {
+        required    = true
         type        = string
         description = <<-END
-          The name of the resource
+          A reference to a Topic resource.
         END
-        default     = "optional-resource-name"
       }
 
-      ### Example of an object
-      variable "example_user_object" {
-        type           = object(user)
-        default        = {}
-        readme_example = <<-END
-          user = {
-            name        = "marius"
-            description = "The guy from Berlin."
-          }
+      variable "project" {
+        required    = true
+        type        = string
+        description = <<-END
+          The project in which the resource belongs. If it is not provided, the
+          provider project is used.
+        END
+      }
+
+      variable "labels" {
+        type        = map(string)
+        default     = {}
+        description = <<-END
+          A set of key/value label pairs to assign to this Subscription.
+        END
+      }
+
+      variable "ack_deadline_seconds" {
+        type        = number
+        description = <<-END
+          This value is the maximum time after a subscriber receives a message
+          before the subscriber should acknowledge the message. After message
+          delivery but before the ack deadline expires and before the message is
+          acknowledged, it is an outstanding message and will not be delivered
+          again during that time (on a best-effort basis). For pull
+          subscriptions, this value is used as the initial value for the ack
+          deadline. To override this value for a given message, call
+          `subscriptions.modifyAckDeadline` with the corresponding `ackId` if
+          using pull. The minimum custom deadline you can specify is `10`
+          seconds. The maximum custom deadline you can specify is `600` seconds
+          (10 minutes). If this parameter is `0`, a default value of `10`
+          seconds is used. For push delivery, this value is also used to set the
+          request timeout for the call to the push endpoint. If the subscriber
+          never acknowledges the message, the Pub/Sub system will eventually
+          redeliver the message.
+        END
+      }
+
+      variable "message_retention_duration" {
+        type           = string
+        default        = "604800s"
+        description    = <<-END
+          How long to retain unacknowledged messages in the subscription's
+          backlog, from the moment a message is published. If
+          `retainAckedMessages` is `true`, then this also configures the
+          retention of acknowledged messages, and thus configures how far back
+          in time a `subscriptions.seek` can be done. Defaults to 7 days.
+          Cannot be more than 7 days (`604800s`) or less than 10 minutes
+          (`600s`). A duration in seconds with up to nine fractional digits,
+          terminated by `s`.
+        END
+        readme_example = "600.5s"
+      }
+
+      variable "retain_acked_messages" {
+        type        = bool
+        description = <<-END
+          Indicates whether to retain acknowledged messages. If `true`, then
+          messages are not expunged from the subscription's backlog, even if
+          they are acknowledged, until they fall out of the
+          `messageRetentionDuration` window.
+        END
+      }
+
+      variable "filter" {
+        type        = string
+        description = <<-END
+          The subscription only delivers the messages that match the filter.
+          Pub/Sub automatically acknowledges the messages that don't match the
+          filter. You can filter messages by their attributes. The maximum
+          length of a filter is 256 bytes. After creating the subscription,
+          you can't modify the filter.
+        END
+      }
+
+      variable "enable_message_ordering" {
+        type        = bool
+        description = <<-END
+          If `true`, messages published with the same `orderingKey` in
+          `PubsubMessage` will be delivered to the subscribers in the order in
+          which they are received by the Pub/Sub system. Otherwise, they may be
+          delivered in any order.
+        END
+      }
+
+      variable "expiration_policy_ttl" {
+        type        = string
+        description = <<-END
+          A policy that specifies the conditions for this subscription's
+          expiration. A subscription is considered active as long as any
+          connected subscriber is successfully consuming messages from the
+          subscription or is issuing operations on the subscription. If
+          `expirationPolicy` is not set, a default policy with ttl of 31 days
+          will be used. If it is set but ttl is "", the resource never expires.
+          The minimum allowed value for `expirationPolicy.ttl` is 1 day.
+        END
+      }
+
+      variable "dead_letter_policy" {
+        type        = object(dead_letter_policy)
+        description = <<-END
+           A policy that specifies the conditions for dead lettering messages
+           in this subscription. If `dead_letter_policy` is not set, dead
+           lettering is disabled. The Cloud Pub/Sub service account associated
+           with this subscription's parent project (i.e.,
+           `service-{project_number}@gcp-sa-pubsub.iam.gserviceaccount.com)`
+           must have permission to `Acknowledge()` messages on this
+           subscription.
         END
 
-        attribute "name" {
-          required    = true
+        attribute "dead_letter_topic" {
           type        = string
           description = <<-END
-            The name of the user
+            The name of the topic to which dead letter messages should be
+            published. Format is `projects/{project}/topics/{topic}`. The Cloud
+            Pub/Sub service account associated with the enclosing subscription's
+            parent project (i.e.,
+            `service-{project_number}@gcp-sa-pubsub.iam.gserviceaccount.com`)
+            must have permission to `Publish()` to this topic. The operation
+            will fail if the topic does not exist. Users should ensure that
+            there is a subscription attached to this topic since messages
+            published to a topic with no subscriptions are lost.
           END
         }
 
-        attribute "description" {
-          type        = string
-          default     = ""
+        attribute "max_delivery_attempts" {
+          type        = number
           description = <<-END
-            A description describng the user in more detail
+            The maximum number of delivery attempts for any message. The value
+            must be between 5 and 100. The number of delivery attempts is
+            defined as 1 + (the sum of number of NACKs and number of times the
+            acknowledgement deadline has been exceeded for the message). A NACK
+            is any call to `ModifyAckDeadline` with a 0 deadline. Note that
+            client libraries may automatically extend `ack_deadlines`. This
+            field will be honored on a best effort basis. If this parameter is
+            0, a default value of 5 is used.
+          END
+        }
+      }
+
+      variable "retry_policy" {
+        type        = object(retry_policy)
+        description = <<-END
+          A policy that specifies how Pub/Sub retries message delivery for this
+          subscription. If not set, the default retry policy is applied. This
+          generally implies that messages will be retried as soon as possible
+          for healthy subscribers. `RetryPolicy` will be triggered on NACKs or
+          acknowledgement deadline exceeded events for a given message.
+        END
+
+        attribute "minimum_backoff" {
+          type           = string
+          description    = <<-END
+            The minimum delay between consecutive deliveries of a given message.
+            Value should be between 0 and 600 seconds. A duration in seconds
+            with up to nine fractional digits, terminated by `s`.
+          END
+          readme_example = "3.5s"
+        }
+
+        attribute "maximum_backoff" {
+          type           = string
+          description    = <<-END
+            The maximum delay between consecutive deliveries of a given message.
+            Value should be between 0 and 600 seconds. A duration in seconds
+            with up to nine fractional digits, terminated by `s`.
+          END
+          readme_example = "3.5s"
+        }
+      }
+
+      variable "push_config" {
+        type        = object(push_config)
+        description = <<-END
+          If push delivery is used with this subscription, this field is used to
+          configure it. An empty `pushConfig` signifies that the subscriber will
+          pull and ack messages using API methods.
+        END
+
+        attribute "oidc_token" {
+          type        = object(oidc_token)
+          description = <<-END
+            If specified, Pub/Sub will generate and attach an OIDC JWT token as
+            an Authorization header in the HTTP request for every pushed
+            message. 
+          END
+
+          attribute "service_account_email" {
+            required    = true
+            type        = string
+            description = <<-END
+              Service account email to be used for generating the OIDC token.
+              The caller (for `subscriptions.create`, `subscriptions.patch`, and
+              `subscriptions.modifyPushConfig` RPCs) must have the
+              `iam.serviceAccounts.actAs` permission for the service account.
+            END
+          }
+
+          attribute "audience" {
+            type        = string
+            description = <<-END
+              Audience to be used when generating OIDC token. The audience claim
+              identifies the recipients that the JWT is intended for. The
+              audience value is a single case-sensitive string. Having multiple
+              values (array) for the audience field is not supported. More info
+              about the OIDC JWT token audience here:
+              https://tools.ietf.org/html/rfc7519#section-4.1.3 Note: if not
+              specified, the Push endpoint URL will be used.
+            END
+          }
+        }
+
+        attribute "push_endpoint" {
+          required    = true
+          type        = string
+          description = <<-END
+            A URL locating the endpoint to which messages should be pushed. For
+            example, a Webhook endpoint might use "https://example.com/push".
+          END
+        }
+
+        attribute "attributes" {
+          required    = true
+          type        = string
+          description = <<-END
+            Endpoint configuration attributes. Every endpoint has a set of API
+            supported attributes that can be used to control different aspects
+            of the message delivery. The currently supported attribute is
+            `x-goog-version`, which you can use to change the format of the
+            pushed message. This attribute indicates the version of the data
+            expected by the endpoint. This controls the shape of the pushed
+            message (i.e., its fields and metadata). The endpoint version is
+            based on the version of the Pub/Sub API. If not present during the
+            `subscriptions.create` call, it will default to the version of the
+            API used to make such call. If not present during a
+            `subscriptions.modifyPushConfig` call, its value will not be
+            changed. `subscriptions.get` calls will always return a valid
+            version, even if the subscription was created without this
+            attribute. The possible values for this attribute are:
+
+            - v1beta1: uses the push format defined in the v1beta1 Pub/Sub API.
+            - v1 or v1beta2: uses the push format defined in the v1 Pub/Sub API.
           END
         }
       }
     }
 
-    # section {
-    #   title = "Extended Resource Configuration"
-    #
-    #   # please uncomment and add extended resource variables here (resource not the main resource)
-    # }
+    section {
+      title = "Extended Resource Configuration"
+
+      variable "iam" {
+        type           = list(iam)
+        default        = []
+        description    = <<-END
+            A list of IAM access.
+          END
+        readme_example = <<-END
+            iam = [{
+              role    = "roles/viewer"
+              members = ["user:member@example.com"]
+            }]
+          END
+
+        attribute "members" {
+          type        = set(string)
+          default     = []
+          description = <<-END
+              Identities that will be granted the privilege in role. Each entry can have one of the following values:
+            - `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account.
+            - `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account.
+            - `user:{emailid}`: An email address that represents a specific Google account. For example, alice@gmail.com or joe@example.com.
+            - `serviceAccount:{emailid}`: An email address that represents a service account. For example, my-other-app@appspot.gserviceaccount.com.
+            - `group:{emailid}`: An email address that represents a Google group. For example, admins@example.com.
+            - `domain:{domain}`: A G Suite domain (primary, instead of alias) name that represents all the users of that domain. For example, google.com or example.com.
+          END
+        }
+
+        attribute "role" {
+          type        = string
+          description = <<-END
+            The role that should be applied. Note that custom roles must be of the format `[projects|organizations]/{parent-name}/roles/{role-name}`.
+          END
+        }
+
+        attribute "authoritative" {
+          type        = bool
+          default     = true
+          description = <<-END
+            Whether to exclusively set (authoritative mode) or add (non-authoritative/additive mode) members to the role.
+          END
+        }
+      }
+
+      variable "policy_bindings" {
+        type           = list(policy_binding)
+        description    = <<-END
+          A list of IAM policy bindings.
+        END
+        readme_example = <<-END
+          policy_bindings = [{
+            role    = "roles/viewer"
+            members = ["user:member@example.com"]
+          }]
+        END
+
+        attribute "role" {
+          required    = true
+          type        = string
+          description = <<-END
+            The role that should be applied.
+          END
+        }
+
+        attribute "members" {
+          type        = set(string)
+          default     = var.members
+          description = <<-END
+            Identities that will be granted the privilege in `role`.
+          END
+        }
+
+        attribute "condition" {
+          type           = object(condition)
+          description    = <<-END
+            An IAM Condition for a given binding.
+          END
+          readme_example = <<-END
+            condition = {
+              expression = "request.time < timestamp(\"2022-01-01T00:00:00Z\")"
+              title      = "expires_after_2021_12_31"
+            }
+          END
+
+          attribute "expression" {
+            required    = true
+            type        = string
+            description = <<-END
+              Textual representation of an expression in Common Expression Language syntax.
+            END
+          }
+
+          attribute "title" {
+            required    = true
+            type        = string
+            description = <<-END
+              A title for the expression, i.e. a short string describing its purpose.
+            END
+          }
+
+          attribute "description" {
+            type        = string
+            description = <<-END
+              An optional description of the expression. This is a longer text which describes the expression, e.g. when hovered over it in a UI.
+            END
+          }
+        }
+      }
+
+    }
 
     section {
       title = "Module Configuration"
@@ -161,63 +477,6 @@ section {
         description = <<-END
           Specifies whether resources in the module will be created.
         END
-      }
-
-      # TODO: remove if not needed
-      variable "module_tags" {
-        type           = map(string)
-        default        = {}
-        description    = <<-END
-          A map of tags that will be applied to all created resources that accept tags.
-          Tags defined with `module_tags` can be overwritten by resource-specific tags.
-        END
-        readme_example = <<-END
-          module_tags = {
-            environment = "staging"
-            team        = "platform"
-          }
-        END
-      }
-
-      # TODO: remove if not needed
-      variable "module_timeouts" {
-        type           = map(timeout)
-        description    = <<-END
-          A map of timeout objects that is keyed by Terraform resource name
-          defining timeouts for `create`, `update` and `delete` Terraform operations.
-
-          Supported resources are: `null_resource`, ...
-        END
-        readme_example = <<-END
-          module_timeouts = {
-            null_resource = {
-              create = "4m"
-              update = "4m"
-              delete = "4m"
-            }
-          }
-        END
-
-        attribute "create" {
-          type        = string
-          description = <<-END
-            Timeout for create operations.
-          END
-        }
-
-        attribute "update" {
-          type        = string
-          description = <<-END
-            Timeout for update operations.
-          END
-        }
-
-        attribute "delete" {
-          type        = string
-          description = <<-END
-            Timeout for delete operations.
-          END
-        }
       }
 
       variable "module_depends_on" {
@@ -242,17 +501,24 @@ section {
       The following attributes are exported in the outputs of the module:
     END
 
+    output "iam" {
+      type        = list(iam)
+      description = <<-END
+        The iam resource objects that define access to the GCS bucket.
+      END
+    }
+
+    output "subscription" {
+      type        = object(subscription)
+      description = <<-END
+        All attributes of the created subscription.
+      END
+    }
+
     output "module_enabled" {
       type        = bool
       description = <<-END
-          Whether this module is enabled.
-        END
-    }
-
-    output "module_tags" {
-      type        = map(string)
-      description = <<-END
-        The map of tags that are being applied to all created resources that accept tags.
+        Whether this module is enabled.
       END
     }
   }
@@ -261,21 +527,17 @@ section {
     title = "External Documentation"
 
     section {
-      title   = "AWS Documentation IAM"
+      title   = "Google Documentation"
       content = <<-END
-        - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html
-        - https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies.html
-        - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html
+        - PubSub: https://cloud.google.com/pubsub
+        - Subscriber Overview: https://cloud.google.com/pubsub/docs/subscriber
       END
     }
 
     section {
-      title   = "Terraform AWS Provider Documentation"
+      title   = "Terraform GCP Provider Documentation"
       content = <<-END
-        - https://www.terraform.io/docs/providers/aws/r/iam_role.html
-        - https://www.terraform.io/docs/providers/aws/r/iam_role_policy.html
-        - https://www.terraform.io/docs/providers/aws/r/iam_role_policy_attachment.html
-        - https://www.terraform.io/docs/providers/aws/r/iam_instance_profile.html
+        - https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/pubsub_subscription
       END
     }
   }
