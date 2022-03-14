@@ -13,7 +13,7 @@ resource "google_pubsub_subscription" "subscription" {
   filter                     = var.filter
   enable_message_ordering    = var.enable_message_ordering
 
-  # DEFAULT: if the variable is not set it efaults to "" unlimited expiration - (do not expire)
+  # DEFAULT: if the variable is not set it defaults to "" unlimited expiration - (do not expire)
   # if ttl == `null` do not add the block (force default of 31d)
   # if set, use what ever has been set. (users whish is our command ;))
   dynamic "expiration_policy" {
