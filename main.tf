@@ -6,21 +6,21 @@ resource "google_pubsub_subscription" "subscription" {
   name  = var.name
   topic = var.topic
 
-  labels                     = try(var.labels, {})
-  ack_deadline_seconds       = try(var.ack_deadline_seconds, null)
-  message_retention_duration = try(var.message_retention_duration, "604800s")
-  retain_acked_messages      = try(var.retain_acked_messages, null)
-  filter                     = try(var.filter, null)
-  enable_message_ordering    = try(var.enable_message_ordering, null)
+  labels                     = var.labels
+  ack_deadline_seconds       = var.ack_deadline_seconds
+  message_retention_duration = var.message_retention_duration
+  retain_acked_messages      = var.retain_acked_messages
+  filter                     = var.filter
+  enable_message_ordering    = var.enable_message_ordering
 
-  # DEFAULT: if the attribute does not exist use "" unlimited expiration - (do not expire)
-  # if ttl = `null` do not add the block (force default of 31d)
+  # DEFAULT: if the variable is not set it defaults to "" unlimited expiration - (do not expire)
+  # if ttl == `null` do not add the block (force default of 31d)
   # if set, use what ever has been set. (users whish is our command ;))
   dynamic "expiration_policy" {
     for_each = var.expiration_policy_ttl != null ? [1] : []
 
     content {
-      ttl = try(var.expiration_policy_ttl, "")
+      ttl = var.expiration_policy_ttl
     }
   }
 
@@ -34,7 +34,7 @@ resource "google_pubsub_subscription" "subscription" {
   }
 
   dynamic "retry_policy" {
-    for_each = can(var.retry_policy) ? [1] : []
+    for_each = var.retry_policy != null ? [1] : []
 
     content {
       minimum_backoff = try(var.retry_policy.minimum_backoff, null)

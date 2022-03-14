@@ -61,7 +61,7 @@ variable "enable_message_ordering" {
 
 variable "expiration_policy_ttl" {
   type        = string
-  default     = null
+  default     = ""
   description = "(Optional) Specifies the 'time-to-live' duration for an associated resource."
 }
 

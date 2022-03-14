@@ -69,7 +69,7 @@ section {
 
       ```hcl
       module "terraform-google-pubsub-subscription" {
-        source = "git@github.com:mineiros-io/terraform-google-pubsub-subscription.git?ref=v0.0.1"
+        source = "git@github.com:mineiros-io/terraform-google-pubsub-subscription.git?ref=v0.0.2"
 
         name    = "subscription-name"
         topic   = "topic-resource"
@@ -292,7 +292,7 @@ section {
           description = <<-END
             If specified, Pub/Sub will generate and attach an OIDC JWT token as
             an Authorization header in the HTTP request for every pushed
-            message. 
+            message.
           END
 
           attribute "service_account_email" {
