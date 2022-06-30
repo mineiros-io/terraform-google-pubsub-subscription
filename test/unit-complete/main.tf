@@ -18,14 +18,11 @@ module "test0" {
     {
       role          = "roles/viewer"
       members       = ["domain:mineiros.io"]
-      authoritative = "yes"
+      authoritative = true
     },
     {
       role    = "roles/editor"
       members = ["computed:myserviceaccount"]
-      computed_members_map = {
-        myserviceaccount = "serviceAccount:${module.test-sa.service_account.email}"
-      }
     }
   ]
 
