@@ -1,35 +1,10 @@
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# COMPLETE FEATURES UNIT TEST
-# This module tests a complete set of most/all non-exclusive features
-# The purpose is to activate everything the module offers, but trying to keep execution time and costs minimal.
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+module "test-sa" {
+  source = "github.com/mineiros-io/terraform-google-service-account?ref=v0.0.10"
 
-variable "gcp_region" {
-  type        = string
-  description = "(Required) The gcp region in which all resources will be created."
+  account_id = "service-account-id-${local.random_suffix}"
 }
 
-variable "gcp_project" {
-  type        = string
-  description = "(Required) The ID of the project in which the resource belongs."
-}
-
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 4.0"
-    }
-  }
-}
-
-provider "google" {
-  region  = var.gcp_region
-  project = var.gcp_project
-}
-
-# DO NOT RENAME MODULE NAME
-module "test" {
+module "test0" {
   source = "../.."
 
   module_enabled = true
@@ -41,26 +16,52 @@ module "test" {
   # add all optional arguments that create additional resources
   iam = [
     {
-      role    = "roles/viewer"
-      members = ["domain:mineiros.io"]
+      role          = "roles/viewer"
+      members       = ["domain:mineiros.io"]
+      authoritative = true
+    },
+    {
+      role    = "roles/editor"
+      members = ["computed:myserviceaccount"]
     }
   ]
 
+  computed_members_map = {
+    myserviceaccount = "serviceAccount:${module.test-sa.service_account.email}"
+  }
+
   # add most/all other optional arguments
-  project = "terraform-service-catalog"
+  project = local.project_id
   labels = {
     "test" = "test"
   }
+
   ack_deadline_seconds       = 10
-  message_retention_duration = "60s"
+  message_retention_duration = "600s"
   retain_acked_messages      = false
   filter                     = "*"
   enable_message_ordering    = true
-  expiration_policy_ttl      = "10s"
+  expiration_policy_ttl      = "86400s"
+
+  dead_letter_policy = {
+    dead_letter_topic     = "projects/${local.project_id}/topics/test-topic"
+    max_delivery_attempts = 6
+  }
 
   retry_policy = {
     minimum_backoff = "10s"
     maximum_backoff = "60s"
+  }
+
+  push_config = {
+    oidc_token = {
+      service_account_email = module.test-sa.service_account.email
+      audience              = "test"
+    }
+    push_endpoint = "https://example.com/push"
+    attributes = {
+      x-goog-version = "v1"
+    }
   }
 
   # module_tags = {
@@ -70,8 +71,69 @@ module "test" {
   module_depends_on = ["nothing"]
 }
 
-# outputs generate non-idempotent terraform plans so we disable them for now unless we need them.
-# output "all" {
-#   description = "All outputs of the module."
-#   value       = module.test
-# }
+
+module "test1" {
+  source = "../.."
+
+  module_enabled = true
+
+  # add all required arguments
+  name  = "test-name"
+  topic = "test-topic"
+
+  # add all optional arguments that create additional resources
+  policy_bindings = [
+    {
+      role    = "roles/viewer"
+      members = ["domain:mineiros.io"]
+    },
+    {
+      role    = "roles/editor"
+      members = ["computed:myserviceaccount"]
+    }
+  ]
+
+  computed_members_map = {
+    myserviceaccount = "serviceAccount:${module.test-sa.service_account.email}"
+  }
+
+  # add most/all other optional arguments
+  project = local.project_id
+  labels = {
+    "test" = "test"
+  }
+
+  ack_deadline_seconds       = 10
+  message_retention_duration = "600s"
+  retain_acked_messages      = false
+  filter                     = "*"
+  enable_message_ordering    = true
+  expiration_policy_ttl      = "86400s"
+
+  dead_letter_policy = {
+    dead_letter_topic     = "projects/${local.project_id}/topics/test-topic"
+    max_delivery_attempts = 6
+  }
+
+  retry_policy = {
+    minimum_backoff = "10s"
+    maximum_backoff = "60s"
+  }
+
+  push_config = {
+    oidc_token = {
+      service_account_email = module.test-sa.service_account.email
+      audience              = "test"
+    }
+    push_endpoint = "https://example.com/push"
+    attributes = {
+      x-goog-version = "v1"
+    }
+  }
+
+  # module_tags = {
+  #   Environment = "unknown"
+  # }
+
+  module_depends_on = ["nothing"]
+}

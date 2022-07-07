@@ -90,16 +90,32 @@ variable "iam" {
   type        = any
   default     = []
 
-  # validate required keys in each object
   validation {
-    condition     = alltrue([for x in var.iam : length(setintersection(keys(x), ["role", "members"])) == 2])
-    error_message = "Each object in var.iam must specify a role and a set of members."
+    condition     = alltrue([for x in var.iam : can(x.role) || can(x.roles)])
+    error_message = "Each object in 'var.iam' must specify a single 'role' or a set of 'roles'."
   }
 
-  # validate no invalid keys are in each object
+  # validate that members attribute is set in each object
   validation {
-    condition     = alltrue([for x in var.iam : length(setsubtract(keys(x), ["role", "members", "authoritative"])) == 0])
-    error_message = "Each object in var.iam does only support role, members and authoritative attributes."
+    condition     = alltrue([for x in var.iam : can(x.members)])
+    error_message = "Each object in 'var.iam' must specify a set of 'members'."
+  }
+
+  # validate no invalid attributes are set in each object
+  validation {
+    condition     = alltrue([for x in var.iam : length(setsubtract(keys(x), ["role", "roles", "members", "authoritative"])) == 0])
+    error_message = "Each object in 'var.iam' does only support the 'role', 'roles', 'members', and 'authoritative' attributes."
+  }
+}
+
+variable "computed_members_map" {
+  type        = map(string)
+  description = "(Optional) A map of members to replace in 'members' to handle terraform computed values. Will be ignored when policy bindings are used."
+  default     = {}
+
+  validation {
+    condition     = alltrue([for k, v in var.computed_members_map : can(regex("^(allUsers|allAuthenticatedUsers|(user|serviceAccount|group|domain):)", v))])
+    error_message = "The value must be a non-empty string being a valid principal type identified with `allUsers`, `allAuthenticatedUsers` or prefixed with `user:`, `serviceAccount:`, `group:`, or `domain:`."
   }
 }
 

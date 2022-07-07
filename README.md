@@ -159,6 +159,7 @@ project = "project-a"
   `expirationPolicy` is not set, a default policy with ttl of 31 days
   will be used. If it is set but ttl is "", the resource never expires.
   The minimum allowed value for `expirationPolicy.ttl` is 1 day.
+  A duration in seconds with up to nine fractional digits, terminated by 's'.
 
 - [**`dead_letter_policy`**](#var-dead_letter_policy): *(Optional `object(dead_letter_policy)`)*<a name="var-dead_letter_policy"></a>
 
@@ -315,6 +316,7 @@ project = "project-a"
     - `serviceAccount:{emailid}`: An email address that represents a service account. For example, my-other-app@appspot.gserviceaccount.com.
     - `group:{emailid}`: An email address that represents a Google group. For example, admins@example.com.
     - `domain:{domain}`: A G Suite domain (primary, instead of alias) name that represents all the users of that domain. For example, google.com or example.com.
+    - `computed:{identifier}`: An existing key from `var.computed_members_map`.
 
     Default is `[]`.
 
@@ -379,6 +381,12 @@ project = "project-a"
     - [**`description`**](#attr-policy_bindings-condition-description): *(Optional `string`)*<a name="attr-policy_bindings-condition-description"></a>
 
       An optional description of the expression. This is a longer text which describes the expression, e.g. when hovered over it in a UI.
+
+- [**`computed_members_map`**](#var-computed_members_map): *(Optional `map(string)`)*<a name="var-computed_members_map"></a>
+
+  A map of members to replace in `members` of various IAM settings to handle terraform computed values.
+
+  Default is `{}`.
 
 ### Module Configuration
 
