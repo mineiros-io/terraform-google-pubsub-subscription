@@ -39,6 +39,16 @@ variable "message_retention_duration" {
   type        = string
   default     = "604800s"
   description = "(Optional) How long to retain unacknowledged messages in the subscription's backlog, from the moment a message is published."
+
+  validation {
+    condition     = can(regex("^[0-9]+(\\.[0-9]{0,9})?s$", var.message_retention_duration))
+    error_message = "Illegal duration format; a duration in seconds with up to nine fractional digits, terminated by `s`."
+  }
+
+  validation {
+    condition     = tonumber(trim(var.message_retention_duration, "s")) <= 604800 && tonumber(trim(var.message_retention_duration, "s")) >= 600 ? true : false
+    error_message = "The value for message retention duration is out of bounds. You passed 1m in the request, but the value must be between 600s (10 minutes) and 604800s (168 hours)."
+  }
 }
 
 variable "retain_acked_messages" {
@@ -63,6 +73,16 @@ variable "expiration_policy_ttl" {
   type        = string
   default     = ""
   description = "(Optional) Specifies the 'time-to-live' duration for an associated resource."
+
+  validation {
+    condition     = can(regex("^[0-9]+(\\.[0-9]{0,9})?s$", var.expiration_policy_ttl)) || var.expiration_policy_ttl == ""
+    error_message = "Illegal duration format; a duration in seconds with up to nine fractional digits, terminated by `s`."
+  }
+
+  validation {
+    condition     = var.expiration_policy_ttl != "" ? (tonumber(trim(var.expiration_policy_ttl, "s")) >= 86400 ? true : false) : true
+    error_message = "The value for expiration duration is too small. The minimum value is 86400 seconds (1 day)."
+  }
 }
 
 variable "dead_letter_policy" {
