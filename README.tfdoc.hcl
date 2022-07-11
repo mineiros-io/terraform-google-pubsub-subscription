@@ -69,7 +69,7 @@ section {
 
       ```hcl
       module "terraform-google-pubsub-subscription" {
-        source = "git@github.com:mineiros-io/terraform-google-pubsub-subscription.git?ref=v0.0.2"
+        source = "git@github.com:mineiros-io/terraform-google-pubsub-subscription.git?ref=v0.0.3"
 
         name    = "subscription-name"
         topic   = "topic-resource"
@@ -203,6 +203,7 @@ section {
           `expirationPolicy` is not set, a default policy with ttl of 31 days
           will be used. If it is set but ttl is "", the resource never expires.
           The minimum allowed value for `expirationPolicy.ttl` is 1 day.
+          A duration in seconds with up to nine fractional digits, terminated by 's'.
         END
       }
 
@@ -382,6 +383,7 @@ section {
             - `serviceAccount:{emailid}`: An email address that represents a service account. For example, my-other-app@appspot.gserviceaccount.com.
             - `group:{emailid}`: An email address that represents a Google group. For example, admins@example.com.
             - `domain:{domain}`: A G Suite domain (primary, instead of alias) name that represents all the users of that domain. For example, google.com or example.com.
+            - `computed:{identifier}`: An existing key from `var.computed_members_map`.
           END
         }
 
@@ -465,7 +467,13 @@ section {
           }
         }
       }
-
+      variable "computed_members_map" {
+        type        = map(string)
+        description = <<-END
+          A map of members to replace in `members` of various IAM settings to handle terraform computed values.
+        END
+        default     = {}
+      }
     }
 
     section {
