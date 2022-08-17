@@ -120,15 +120,11 @@ module "test1" {
     maximum_backoff = "60s"
   }
 
-  push_config = {
-    oidc_token = {
-      service_account_email = module.test-sa.service_account.email
-      audience              = "test"
-    }
-    push_endpoint = "https://example.com/push"
-    attributes = {
-      x-goog-version = "v1"
-    }
+  bigquery_config = {
+    table               = "my-table"
+    use_topic_schema    = false
+    write_metadata      = false
+    drop_unknown_fields = false
   }
 
   # module_tags = {

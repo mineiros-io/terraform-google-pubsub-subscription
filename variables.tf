@@ -83,6 +83,12 @@ variable "push_config" {
   description = "(Optional) If push delivery is used with this subscription, this field is used to configure it."
 }
 
+variable "bigquery_config" {
+  type        = any
+  default     = null
+  description = "(Optional) If delivery to BigQuery is used with this subscription, this field is used to configure it. Either pushConfig or bigQueryConfig can be set, but not both. If both are empty, then the subscriber will pull and ack messages using API methods."
+}
+
 ## IAM
 
 variable "iam" {

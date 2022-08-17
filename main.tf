@@ -60,5 +60,17 @@ resource "google_pubsub_subscription" "subscription" {
     }
   }
 
+  dynamic "bigquery_config" {
+    for_each = var.bigquery_config != null ? [var.bigquery_config] : []
+    iterator = bqc
+
+    content {
+      table               = bqc.value.table
+      use_topic_schema    = try(bqc.value.use_topic_schema, null)
+      write_metadata      = try(bqc.value.write_metadata, null)
+      drop_unknown_fields = try(bqc.value.drop_unknown_fields, null)
+    }
+  }
+
   depends_on = [var.module_depends_on]
 }
