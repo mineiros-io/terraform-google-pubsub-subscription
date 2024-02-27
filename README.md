@@ -13,7 +13,7 @@ A [Terraform](https://www.terraform.io) module for creating a
 [Google Cloud Pub/Sub](https://cloud.google.com/pubsub).
 
 **_This module supports Terraform version 1
-and is compatible with the Terraform Google Provider version 4._**
+and is compatible with the Terraform Google Provider version 5._**
 
 This module is part of our Infrastructure as Code (IaC) framework
 that enables our users and customers to easily deploy and manage reusable,
@@ -150,6 +150,15 @@ project = "project-a"
   which they are received by the Pub/Sub system. Otherwise, they may be
   delivered in any order.
 
+- [**`enable_exactly_once_delivery`**](#var-enable_exactly_once_delivery): *(Optional `bool`)*<a name="var-enable_exactly_once_delivery"></a>
+
+  If `true`,The message sent to a subscriber is guaranteed not to be resent 
+   before the message's acknowledgement deadline expires. An acknowledged 
+   message will not be resent to a subscriber. Note that subscribers may 
+   still receive multiple copies of a message when enable_exactly_once_delivery 
+   is true if the message was published multiple times by a publisher client. 
+   These copies are considered distinct by Pub/Sub and have distinct messageId values
+
 - [**`expiration_policy_ttl`**](#var-expiration_policy_ttl): *(Optional `string`)*<a name="var-expiration_policy_ttl"></a>
 
   A policy that specifies the conditions for this subscription's
@@ -263,6 +272,20 @@ project = "project-a"
       https://tools.ietf.org/html/rfc7519#section-4.1.3 Note: if not
       specified, the Push endpoint URL will be used.
 
+  - [**`no_wrapper`**](#attr-push_config-no_wrapper): *(Optional `object(no_wrapper)`)*<a name="attr-push_config-no_wrapper"></a>
+
+    When set, the payload to the push endpoint is not wrapped. 
+    Sets the data field as the HTTP body for delivery.
+
+    The `no_wrapper` object accepts the following attributes:
+
+    - [**`write_metadata`**](#attr-push_config-no_wrapper-write_metadata): *(**Required** `string`)*<a name="attr-push_config-no_wrapper-write_metadata"></a>
+
+      When true, writes the Pub/Sub message metadata to 
+      x-goog-pubsub-<KEY>:<VAL> headers of the HTTP request. 
+      Writes the Pub/Sub message attributes to <KEY>:<VAL> 
+      headers of the HTTP request.
+
   - [**`push_endpoint`**](#attr-push_config-push_endpoint): *(**Required** `string`)*<a name="attr-push_config-push_endpoint"></a>
 
     A URL locating the endpoint to which messages should be pushed. For
@@ -311,6 +334,50 @@ project = "project-a"
   - [**`drop_unknown_fields`**](#attr-bigquery_config-drop_unknown_fields): *(Optional `bool`)*<a name="attr-bigquery_config-drop_unknown_fields"></a>
 
     When `true` and `use_topic_schema` is `true`, any fields that are a part of the topic schema that are not part of the BigQuery table schema are dropped when writing to BigQuery. Otherwise, the schemas must be kept in sync and any messages with extra fields are not written and remain in the subscription's backlog.
+
+- [**`cloud_storage_config`**](#var-cloud_storage_config): *(Optional `object(cloud_storage_config)`)*<a name="var-cloud_storage_config"></a>
+
+  If delivery to Cloud Storage is used with this subscription, this field is used to configure it. Either pushConfig, bigQueryConfig or cloudStorageConfig can be set, but not combined. If all three are empty, then the subscriber will pull and ack messages using API methods.
+
+  The `cloud_storage_config` object accepts the following attributes:
+
+  - [**`bucket`**](#attr-cloud_storage_config-bucket): *(**Required** `string`)*<a name="attr-cloud_storage_config-bucket"></a>
+
+    User-provided name for the Cloud Storage bucket. The bucket must be created by the user. 
+    The bucket name must be without any prefix like "gs://".
+
+  - [**`filename_prefix`**](#attr-cloud_storage_config-filename_prefix): *(Optional `string`)*<a name="attr-cloud_storage_config-filename_prefix"></a>
+
+    (Optional) User-provided prefix for Cloud Storage filename.
+
+  - [**`filename_suffix`**](#attr-cloud_storage_config-filename_suffix): *(Optional `string`)*<a name="attr-cloud_storage_config-filename_suffix"></a>
+
+    (Optional) User-provided suffix for Cloud Storage filename. Must not end in "/".
+
+  - [**`max_duration`**](#attr-cloud_storage_config-max_duration): *(Optional `string`)*<a name="attr-cloud_storage_config-max_duration"></a>
+
+    (Optional) The maximum duration that can elapse before a new Cloud Storage file is created. 
+    Min 1 minute, max 10 minutes, default 5 minutes. May not exceed the subscription's acknowledgement deadline. 
+    A duration in seconds with up to nine fractional digits, ending with 's'. Example: "3.5s".
+
+  - [**`max_bytes`**](#attr-cloud_storage_config-max_bytes): *(Optional `number`)*<a name="attr-cloud_storage_config-max_bytes"></a>
+
+    (Optional) The maximum bytes that can be written to a Cloud Storage file before a new file is created. 
+    Min 1 KB, max 10 GiB. The maxBytes limit may be exceeded in cases where messages are larger than the limit.
+
+  - [**`state`**](#attr-cloud_storage_config-state): *(Optional `any`)*<a name="attr-cloud_storage_config-state"></a>
+
+    (Output) An output-only field that indicates whether or not the subscription can receive messages.
+
+  - [**`avro_config`**](#attr-cloud_storage_config-avro_config): *(Optional `bool`)*<a name="attr-cloud_storage_config-avro_config"></a>
+
+    If set, message data will be written to Cloud Storage in Avro format.
+
+    The object accepts the following attributes:
+
+    - [**`write_metadata`**](#attr-cloud_storage_config-avro_config-write_metadata): *(Optional `any`)*<a name="attr-cloud_storage_config-avro_config-write_metadata"></a>
+
+      When true, write the subscription name, messageId, publishTime, attributes, and orderingKey as additional fields in the output.
 
 ### Extended Resource Configuration
 

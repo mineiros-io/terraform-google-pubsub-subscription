@@ -17,7 +17,7 @@ locals {
 }
 
 module "subscription-iam" {
-  source = "github.com/mineiros-io/terraform-google-pubsub-subscription-iam?ref=v0.0.4"
+  source = "github.com/mineiros-io/terraform-google-pubsub-subscription-iam?ref=v0.1.0"
 
   for_each = var.policy_bindings == null ? local.iam_map : {}
 
@@ -34,7 +34,7 @@ module "subscription-iam" {
 }
 
 module "policy_bindings" {
-  source = "github.com/mineiros-io/terraform-google-pubsub-subscription-iam?ref=v0.0.4"
+  source = "github.com/mineiros-io/terraform-google-pubsub-subscription-iam?ref=v0.1.0"
 
   count = var.policy_bindings != null ? 1 : 0
 

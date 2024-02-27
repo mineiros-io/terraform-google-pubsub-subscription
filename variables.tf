@@ -59,6 +59,12 @@ variable "enable_message_ordering" {
   description = "(Optional) Whether to order message by when it was received."
 }
 
+variable "enable_exactly_once_delivery" {
+  type        = bool
+  default     = null
+  description = "(Optional) Whether to enable excatly one message delivery functionality."
+}
+
 variable "expiration_policy_ttl" {
   type        = string
   default     = ""
@@ -87,6 +93,12 @@ variable "bigquery_config" {
   type        = any
   default     = null
   description = "(Optional) If delivery to BigQuery is used with this subscription, this field is used to configure it. Either pushConfig or bigQueryConfig can be set, but not both. If both are empty, then the subscriber will pull and ack messages using API methods."
+}
+
+variable "cloud_storage_config" {
+  type        = any
+  default     = null
+  description = "(Optional) If delivery to Cloud Storage is used with this subscription, this field is used to configure it. Either pushConfig, bigQueryConfig or cloudStorageConfig can be set, but not combined. If all three are empty, then the subscriber will pull and ack messages using API methods."
 }
 
 ## IAM
