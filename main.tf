@@ -6,12 +6,13 @@ resource "google_pubsub_subscription" "subscription" {
   name  = var.name
   topic = var.topic
 
-  labels                     = var.labels
-  ack_deadline_seconds       = var.ack_deadline_seconds
-  message_retention_duration = var.message_retention_duration
-  retain_acked_messages      = var.retain_acked_messages
-  filter                     = var.filter
-  enable_message_ordering    = var.enable_message_ordering
+  labels                       = var.labels
+  ack_deadline_seconds         = var.ack_deadline_seconds
+  message_retention_duration   = var.message_retention_duration
+  retain_acked_messages        = var.retain_acked_messages
+  filter                       = var.filter
+  enable_message_ordering      = var.enable_message_ordering
+  enable_exactly_once_delivery = var.enable_exactly_once_delivery
 
   # DEFAULT: if the variable is not set it defaults to "" unlimited expiration - (do not expire)
   # if ttl == `null` do not add the block (force default of 31d)
@@ -57,6 +58,14 @@ resource "google_pubsub_subscription" "subscription" {
           audience              = try(push_config.value.oidc_token.audience, null)
         }
       }
+
+      dynamic "no_wrapper" {
+        for_each = try([push_config.value.no_wrapper], [])
+
+        content {
+          write_metadata = no_wrapper.value.write_metadata
+        }
+      }
     }
   }
 
@@ -69,6 +78,25 @@ resource "google_pubsub_subscription" "subscription" {
       use_topic_schema    = try(bqc.value.use_topic_schema, null)
       write_metadata      = try(bqc.value.write_metadata, null)
       drop_unknown_fields = try(bqc.value.drop_unknown_fields, null)
+    }
+  }
+
+  dynamic "cloud_storage_config" {
+    for_each = var.cloud_storage_config != null ? [var.cloud_storage_config] : []
+    iterator = csc
+
+    content {
+      bucket          = csc.value.bucket
+      filename_prefix = try(csc.value.filename_prefix, null)
+      filename_suffix = try(csc.value.filename_suffix, null)
+      max_duration    = try(csc.value.max_duration, null)
+      max_bytes       = try(csc.value.max_bytes, null)
+      dynamic "avro_config" {
+        for_each = try([csc.value.avro_config], [])
+        content {
+          write_metadata = try(avro_config.value.write_metadata, null)
+        }
+      }
     }
   }
 

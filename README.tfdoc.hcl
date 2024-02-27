@@ -42,7 +42,7 @@ section {
     [Google Cloud Pub/Sub](https://cloud.google.com/pubsub).
 
     **_This module supports Terraform version 1
-    and is compatible with the Terraform Google Provider version 4._**
+    and is compatible with the Terraform Google Provider version 5._**
 
     This module is part of our Infrastructure as Code (IaC) framework
     that enables our users and customers to easily deploy and manage reusable,
@@ -193,6 +193,18 @@ section {
         END
       }
 
+      variable "enable_exactly_once_delivery" {
+        type        = bool
+        description = <<-END
+          If `true`,The message sent to a subscriber is guaranteed not to be resent 
+           before the message's acknowledgement deadline expires. An acknowledged 
+           message will not be resent to a subscriber. Note that subscribers may 
+           still receive multiple copies of a message when enable_exactly_once_delivery 
+           is true if the message was published multiple times by a publisher client. 
+           These copies are considered distinct by Pub/Sub and have distinct messageId values
+        END
+      }
+
       variable "expiration_policy_ttl" {
         type        = string
         description = <<-END
@@ -321,6 +333,25 @@ section {
           }
         }
 
+        attribute "no_wrapper" {
+          type        = object(no_wrapper)
+          description = <<-END
+            When set, the payload to the push endpoint is not wrapped. 
+            Sets the data field as the HTTP body for delivery.
+          END
+
+          attribute "write_metadata" {
+            required    = true
+            type        = string
+            description = <<-END
+              When true, writes the Pub/Sub message metadata to 
+              x-goog-pubsub-<KEY>:<VAL> headers of the HTTP request. 
+              Writes the Pub/Sub message attributes to <KEY>:<VAL> 
+              headers of the HTTP request.
+            END
+          }
+        }
+
         attribute "push_endpoint" {
           required    = true
           type        = string
@@ -390,6 +421,74 @@ section {
           description = <<-END
             When `true` and `use_topic_schema` is `true`, any fields that are a part of the topic schema that are not part of the BigQuery table schema are dropped when writing to BigQuery. Otherwise, the schemas must be kept in sync and any messages with extra fields are not written and remain in the subscription's backlog.
           END
+        }
+      }
+
+      variable "cloud_storage_config" {
+        type        = object(cloud_storage_config)
+        description = <<-END
+          If delivery to Cloud Storage is used with this subscription, this field is used to configure it. Either pushConfig, bigQueryConfig or cloudStorageConfig can be set, but not combined. If all three are empty, then the subscriber will pull and ack messages using API methods.
+        END
+
+        attribute "bucket" {
+          type        = string
+          required    = true
+          description = <<-END
+           User-provided name for the Cloud Storage bucket. The bucket must be created by the user. 
+           The bucket name must be without any prefix like "gs://".
+          END
+        }
+
+        attribute "filename_prefix" {
+          type        = string
+          description = <<-END
+             (Optional) User-provided prefix for Cloud Storage filename.
+          END
+        }
+
+        attribute "filename_suffix" {
+          type        = string
+          description = <<-END
+            (Optional) User-provided suffix for Cloud Storage filename. Must not end in "/".
+          END
+        }
+
+        attribute "max_duration" {
+          type        = string
+          description = <<-END
+            (Optional) The maximum duration that can elapse before a new Cloud Storage file is created. 
+            Min 1 minute, max 10 minutes, default 5 minutes. May not exceed the subscription's acknowledgement deadline. 
+            A duration in seconds with up to nine fractional digits, ending with 's'. Example: "3.5s".
+          END
+        }
+
+        attribute "max_bytes" {
+          type        = number
+          description = <<-END
+            (Optional) The maximum bytes that can be written to a Cloud Storage file before a new file is created. 
+            Min 1 KB, max 10 GiB. The maxBytes limit may be exceeded in cases where messages are larger than the limit.
+          END
+        }
+
+        attribute "state" {
+          type        = any
+          description = <<-END
+            (Output) An output-only field that indicates whether or not the subscription can receive messages.
+          END
+        }
+
+        attribute "avro_config" {
+          type        = bool
+          description = <<-END
+            If set, message data will be written to Cloud Storage in Avro format.
+          END
+
+          attribute "write_metadata" {
+            type        = any
+            description = <<-END
+              When true, write the subscription name, messageId, publishTime, attributes, and orderingKey as additional fields in the output.
+            END
+          }
         }
       }
     }

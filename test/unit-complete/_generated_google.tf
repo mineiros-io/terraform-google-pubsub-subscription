@@ -1,5 +1,4 @@
 // TERRAMATE: GENERATED AUTOMATICALLY DO NOT EDIT
-// TERRAMATE: originated from generate_hcl block on /test/terramate_google.tm.hcl
 
 variable "gcp_project" {
   description = "(Required) The ID of the project in which the resource belongs."
@@ -24,7 +23,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 4.32"
+      version = ">= 5, <6"
     }
     random = {
       source  = "hashicorp/random"
