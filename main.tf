@@ -74,10 +74,12 @@ resource "google_pubsub_subscription" "subscription" {
     iterator = bqc
 
     content {
-      table               = bqc.value.table
-      use_topic_schema    = try(bqc.value.use_topic_schema, null)
-      write_metadata      = try(bqc.value.write_metadata, null)
-      drop_unknown_fields = try(bqc.value.drop_unknown_fields, null)
+      table                 = bqc.value.table
+      use_topic_schema      = try(bqc.value.use_topic_schema, null)
+      use_table_schema      = try(bqc.value.use_table_schema, null)
+      write_metadata        = try(bqc.value.write_metadata, null)
+      drop_unknown_fields   = try(bqc.value.drop_unknown_fields, null)
+      service_account_email = try(bqc.value.service_account_email, null)
     }
   }
 

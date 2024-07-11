@@ -365,7 +365,7 @@ project = "project-a"
     (Optional) The maximum bytes that can be written to a Cloud Storage file before a new file is created. 
     Min 1 KB, max 10 GiB. The maxBytes limit may be exceeded in cases where messages are larger than the limit.
 
-  - [**`state`**](#attr-cloud_storage_config-state): *(Optional `any`)*<a name="attr-cloud_storage_config-state"></a>
+  - [**`state`**](#attr-cloud_storage_config-state): *(Optional `object`)*<a name="attr-cloud_storage_config-state"></a>
 
     (Output) An output-only field that indicates whether or not the subscription can receive messages.
 
@@ -375,7 +375,7 @@ project = "project-a"
 
     The object accepts the following attributes:
 
-    - [**`write_metadata`**](#attr-cloud_storage_config-avro_config-write_metadata): *(Optional `any`)*<a name="attr-cloud_storage_config-avro_config-write_metadata"></a>
+    - [**`write_metadata`**](#attr-cloud_storage_config-avro_config-write_metadata): *(Optional `object`)*<a name="attr-cloud_storage_config-avro_config-write_metadata"></a>
 
       When true, write the subscription name, messageId, publishTime, attributes, and orderingKey as additional fields in the output.
 
