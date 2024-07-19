@@ -1,5 +1,5 @@
 globals {
-  minimum_provider_version    = "5"
+  minimum_provider_version    = "5.35.0"
   provider_version_constraint = ">= ${global.minimum_provider_version}, <6"
 
   stack_basename = tm_reverse(tm_split("/", terramate.path))[0]

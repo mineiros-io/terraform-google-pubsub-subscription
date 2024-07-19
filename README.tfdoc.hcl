@@ -405,7 +405,14 @@ section {
         attribute "use_topic_schema" {
           type        = bool
           description = <<-END
-            When `true`, use the topic's schema as the columns to write to in BigQuery, if it exists.
+            When `true`, use the topic's schema as the columns to write to in BigQuery, if it exists. Only one of use_topic_schema and use_table_schema can be set.
+          END
+        }
+
+        attribute "use_table_schema" {
+          type        = bool
+          description = <<-END
+            When true, use the BigQuery table's schema as the columns to write to in BigQuery. Messages must be published in JSON format. Only one of use_topic_schema and use_table_schema can be set.
           END
         }
 
@@ -420,6 +427,13 @@ section {
           type        = bool
           description = <<-END
             When `true` and `use_topic_schema` is `true`, any fields that are a part of the topic schema that are not part of the BigQuery table schema are dropped when writing to BigQuery. Otherwise, the schemas must be kept in sync and any messages with extra fields are not written and remain in the subscription's backlog.
+          END
+        }
+
+        attribute "service_account_email" {
+          type        = string
+          description = <<-END
+            The service account to use to write to BigQuery. If not specified, the Pub/Sub service agent, service-{project_number}@gcp-sa-pubsub.iam.gserviceaccount.com, is used.
           END
         }
       }
@@ -470,21 +484,14 @@ section {
           END
         }
 
-        attribute "state" {
-          type        = any
-          description = <<-END
-            (Output) An output-only field that indicates whether or not the subscription can receive messages.
-          END
-        }
-
         attribute "avro_config" {
-          type        = bool
+          type        = object(avro_config)
           description = <<-END
             If set, message data will be written to Cloud Storage in Avro format.
           END
 
           attribute "write_metadata" {
-            type        = any
+            type        = bool
             description = <<-END
               When true, write the subscription name, messageId, publishTime, attributes, and orderingKey as additional fields in the output.
             END

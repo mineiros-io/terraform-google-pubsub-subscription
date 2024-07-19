@@ -325,7 +325,11 @@ project = "project-a"
 
   - [**`use_topic_schema`**](#attr-bigquery_config-use_topic_schema): *(Optional `bool`)*<a name="attr-bigquery_config-use_topic_schema"></a>
 
-    When `true`, use the topic's schema as the columns to write to in BigQuery, if it exists.
+    When `true`, use the topic's schema as the columns to write to in BigQuery, if it exists. Only one of use_topic_schema and use_table_schema can be set.
+
+  - [**`use_table_schema`**](#attr-bigquery_config-use_table_schema): *(Optional `bool`)*<a name="attr-bigquery_config-use_table_schema"></a>
+
+    When true, use the BigQuery table's schema as the columns to write to in BigQuery. Messages must be published in JSON format. Only one of use_topic_schema and use_table_schema can be set.
 
   - [**`write_metadata`**](#attr-bigquery_config-write_metadata): *(Optional `bool`)*<a name="attr-bigquery_config-write_metadata"></a>
 
@@ -334,6 +338,10 @@ project = "project-a"
   - [**`drop_unknown_fields`**](#attr-bigquery_config-drop_unknown_fields): *(Optional `bool`)*<a name="attr-bigquery_config-drop_unknown_fields"></a>
 
     When `true` and `use_topic_schema` is `true`, any fields that are a part of the topic schema that are not part of the BigQuery table schema are dropped when writing to BigQuery. Otherwise, the schemas must be kept in sync and any messages with extra fields are not written and remain in the subscription's backlog.
+
+  - [**`service_account_email`**](#attr-bigquery_config-service_account_email): *(Optional `string`)*<a name="attr-bigquery_config-service_account_email"></a>
+
+    The service account to use to write to BigQuery. If not specified, the Pub/Sub service agent, service-{project_number}@gcp-sa-pubsub.iam.gserviceaccount.com, is used.
 
 - [**`cloud_storage_config`**](#var-cloud_storage_config): *(Optional `object(cloud_storage_config)`)*<a name="var-cloud_storage_config"></a>
 
@@ -365,17 +373,13 @@ project = "project-a"
     (Optional) The maximum bytes that can be written to a Cloud Storage file before a new file is created. 
     Min 1 KB, max 10 GiB. The maxBytes limit may be exceeded in cases where messages are larger than the limit.
 
-  - [**`state`**](#attr-cloud_storage_config-state): *(Optional `any`)*<a name="attr-cloud_storage_config-state"></a>
-
-    (Output) An output-only field that indicates whether or not the subscription can receive messages.
-
-  - [**`avro_config`**](#attr-cloud_storage_config-avro_config): *(Optional `bool`)*<a name="attr-cloud_storage_config-avro_config"></a>
+  - [**`avro_config`**](#attr-cloud_storage_config-avro_config): *(Optional `object(avro_config)`)*<a name="attr-cloud_storage_config-avro_config"></a>
 
     If set, message data will be written to Cloud Storage in Avro format.
 
-    The object accepts the following attributes:
+    The `avro_config` object accepts the following attributes:
 
-    - [**`write_metadata`**](#attr-cloud_storage_config-avro_config-write_metadata): *(Optional `any`)*<a name="attr-cloud_storage_config-avro_config-write_metadata"></a>
+    - [**`write_metadata`**](#attr-cloud_storage_config-avro_config-write_metadata): *(Optional `bool`)*<a name="attr-cloud_storage_config-avro_config-write_metadata"></a>
 
       When true, write the subscription name, messageId, publishTime, attributes, and orderingKey as additional fields in the output.
 
